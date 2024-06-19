@@ -1,0 +1,5 @@
+schedule
+telebot
+elevenlabs
+openai
+gigachain-cli
