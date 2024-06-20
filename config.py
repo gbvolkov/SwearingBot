@@ -1,5 +1,3 @@
-#ELEVENLABS_API_KEY = "sk_94020e4e95c4d8330b6ba0f68a846e8b5d796a97a3a311bc"
-#OPENAI_API_KEY = "sk-proj-WXbirpruqtC1UFsOH0IST3BlbkFJwoMN2yanytWGHU2QY1Io"
 from dotenv import load_dotenv
 import os
 
