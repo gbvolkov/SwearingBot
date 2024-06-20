@@ -53,7 +53,6 @@ def start_sending_messages(user_id):
 def send_welcome(message):
     #global bsend
     user_data[message.chat.id] = {'voices': voices, 'selected_voice': None, 'bsend': True}
-    user_data[message.chat.id]['bsend'] = True
     threading.Thread(target=start_sending_messages, args=(message.chat.id,)).start()
     #markup = ReplyKeyboardMarkup(row_width=2)
     #for voice in voices:
