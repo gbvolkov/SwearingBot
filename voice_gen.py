@@ -14,5 +14,4 @@ def generate_audio(text: str, voice: str):
 	    voice=voice,
 	    model="eleven_multilingual_v2"
 		)
-	audio_bytes = b''.join(audio)
-	return audio_bytes
+	return b''.join(audio)

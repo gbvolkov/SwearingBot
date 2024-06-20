@@ -28,7 +28,7 @@ def get_random_voice(voices):
 # Function to send a message
 def send_message(user_id):
     if user_data[user_id]['bsend']:
-        sentence = swearing_generator.get_answer("Пожалуйста, придумай для меня ровно одно самое страшное шутливое ругательство для лица женского гендера. Не используй ругательства, которые намекают на глупость или слабоумие. Ругательство не должно быть длинее трёх слов.")
+        sentence = swearing_generator.get_answer("Обзови Алису. Пол: Женский. Возраст: 20 лет")
         
         try:
             bot.send_message(user_id, sentence)
@@ -43,14 +43,14 @@ def send_message(user_id):
 def start_sending_messages(user_id):
     def job():
         send_message(user_id)
-    schedule.every(1).minute.do(job)
+    schedule.every(55).seconds.do(job)
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 # Handle /start command
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
+def start_swearing(message):
     #global bsend
     user_data[message.chat.id] = {'voices': voices, 'selected_voice': None, 'bsend': True}
     threading.Thread(target=start_sending_messages, args=(message.chat.id,)).start()
@@ -63,7 +63,7 @@ def send_welcome(message):
 
 # Handle /stop command
 @bot.message_handler(commands=['stop'])
-def send_welcome(message):
+def stop_swearing(message):
     user_data[message.chat.id]['bsend'] = False
 
 # Handle text messages for voice selection and text input
