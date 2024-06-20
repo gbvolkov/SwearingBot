@@ -3,3 +3,4 @@ telebot
 elevenlabs
 openai
 gigachain-cli
+python-dotenv

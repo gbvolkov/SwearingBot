@@ -16,13 +16,6 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 user_data = {}
 voices = []
 
-# List of sentences to send
-sentences = [
-    "Hello! This is your friendly bot.",
-    "Here’s a random sentence for you.",
-    "Did you know? Bots can be really useful!",
-    "Another message from your bot."
-]
 
 swearing_generator = SwearingGenerator()
 bsend = False
