@@ -1,5 +1,5 @@
 import telebot
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from config import Config
 from sber_swearing_gen import SberSwearingGenerator
 from voice_gen import get_all_voices, generate_audio
@@ -32,10 +32,13 @@ def send_message(user_id):
         
         try:
             bot.send_message(user_id, sentence)
-            voice_id = get_random_voice(voices)
-            audio = generate_audio(sentence, voice_id['id'])
-            bot.send_voice(user_id, audio)
-            print(f"Sent message: {sentence} to user {user_id} with {voice_id}")
+            if random.randint(0, 9) >= 9:
+                voice_id = get_random_voice(voices)
+                audio = generate_audio(sentence, voice_id['id'])
+                bot.send_voice(user_id, audio)
+                print(f"Sent message: {sentence} to user {user_id} with {voice_id}")
+            else:
+                print(f"Sent message: {sentence} to user {user_id} with no voice")
         except Exception as e:
             print(f"Failed to send message to user {user_id}: {e}")
 
@@ -54,6 +57,7 @@ def start_swearing(message):
     #global bsend
     user_data[message.chat.id] = {'voices': voices, 'selected_voice': None, 'bsend': True}
     threading.Thread(target=start_sending_messages, args=(message.chat.id,)).start()
+    bot.send_message(message.chat.id, "Start swearing.")
     #markup = ReplyKeyboardMarkup(row_width=2)
     #for voice in voices:
     #    markup.add(KeyboardButton(voice['name']))
@@ -65,6 +69,10 @@ def start_swearing(message):
 @bot.message_handler(commands=['stop'])
 def stop_swearing(message):
     user_data[message.chat.id]['bsend'] = False
+    # Create a ReplyKeyboardRemove object
+    markup = ReplyKeyboardRemove()
+    # Send a message with the ReplyKeyboardRemove object to clear the keyboard
+    bot.send_message(message.chat.id, "Swearing stopped.", reply_markup=markup)
 
 # Handle text messages for voice selection and text input
 #@bot.message_handler(func=lambda message: True)
