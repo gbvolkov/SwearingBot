@@ -1,8 +1,8 @@
 from elevenlabs import save
 from elevenlabs.client import ElevenLabs
-from config import ELEVENLABS_API_KEY
+from config import Config
 
-client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+client = ElevenLabs(api_key=Config.ELEVENLABS_API_KEY)
 
 def get_all_voices():
 	voices = client.voices.get_all()

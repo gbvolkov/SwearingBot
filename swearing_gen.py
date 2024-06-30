@@ -1,6 +1,6 @@
 
 from openai import OpenAI
-from config import OPENAI_API_KEY
+from config import Config
 
 SYSTEM_PROMPT = """
 Ты очень весёлый, яркий и язвительный человек.
@@ -14,7 +14,7 @@ SYSTEM_PROMPT = """
 
 class SwearingGenerator():
 	def __init__(self):
-		self.client = OpenAI(api_key=OPENAI_API_KEY)
+		self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
 		return
 	
 	def get_answer(self, question):

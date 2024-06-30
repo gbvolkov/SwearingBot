@@ -1,6 +1,6 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
-from config import TELEGRAM_BOT_TOKEN
+from config import Config
 from sber_swearing_gen import SberSwearingGenerator
 from voice_gen import get_all_voices, generate_audio
 import schedule
@@ -10,7 +10,7 @@ import random
 from swearing_gen import SwearingGenerator
 
 # Initialize the bot with your token
-bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
 
 # Store user data
 user_data = {}
@@ -28,7 +28,7 @@ def get_random_voice(voices):
 # Function to send a message
 def send_message(user_id):
     if user_data[user_id]['bsend']:
-        sentence = swearing_generator.get_answer("Обзови Алису. Пол: Женский. Возраст: 20 лет")
+        sentence = swearing_generator.get_answer("Обзови Веронику. Пол: Женский. Возраст: 33 года.")
         
         try:
             bot.send_message(user_id, sentence)
