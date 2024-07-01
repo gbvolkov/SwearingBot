@@ -58,6 +58,7 @@ def start_sending_swearings(user_id):
     def swear():
         send_swearing(user_id)
     schedule.every(random.randint(45, 75)).seconds.do(swear)
+    swear()
     while True:
         schedule.run_pending()
         time.sleep(1)
@@ -72,20 +73,23 @@ def start_sending_reminders(user_id):
         time.sleep(1)
 
 
+def start_messaging_thread(user_data, chat_id, func, bsend):
+    if chat_id in user_data:
+        user_thread = user_data[chat_id]['Thread']
+        if user_thread is not None:
+            #user_thread.join()
+            del user_thread
+    user_data[chat_id] = {'voices': voices, 
+                            'selected_voice': None, 
+                            'bsend': bsend, 
+                            'Thread': threading.Thread(target=func, args=(chat_id,))}
+    user_data[chat_id]['Thread'].start()
+
 # Handle /start command
 @bot.message_handler(commands=['start'])
 def start_swearing(message):
     #global bsend
-    if message.chat.id in user_data:
-        user_thread = user_data[message.chat.id]['Thread']
-        if user_thread is not None:
-            #user_thread.join()
-            del user_thread
-    user_data[message.chat.id] = {'voices': voices, 
-                                  'selected_voice': None, 
-                                  'bsend': True, 
-                                  'Thread': threading.Thread(target=start_sending_swearings, args=(message.chat.id,))}
-    user_data[message.chat.id]['Thread'].start()
+    start_messaging_thread(user_data, message.chat.id, start_sending_swearings, True)
     bot.send_message(message.chat.id, "Start swearing.")
     print("Swearing started")
     #markup = ReplyKeyboardMarkup(row_width=2)
@@ -98,22 +102,11 @@ def start_swearing(message):
 # Handle /stop command
 @bot.message_handler(commands=['stop'])
 def stop_swearing(message):
-    if message.chat.id in user_data:
-        #print("Inside 1")
-        user_thread = user_data[message.chat.id]['Thread']
-        if user_thread is not None:
-            #print("Joining thread")
-            #user_thread.join()
-            #print("removing thread")
-            del user_thread
-        user_data[message.chat.id]['bsend'] = False
-        user_data[message.chat.id]['Thread'] = threading.Thread(target=start_sending_reminders, args=(message.chat.id,))
-        #print("starting thread")
-        user_data[message.chat.id]['Thread'].start()
-    # Create a ReplyKeyboardRemove object
-    markup = ReplyKeyboardRemove()
+    start_messaging_thread(user_data, message.chat.id, start_sending_reminders, False)
+    #Remove a ReplyKeyboardRemove object
+    #markup = ReplyKeyboardRemove()
     # Send a message with the ReplyKeyboardRemove object to clear the keyboard
-    bot.send_message(message.chat.id, "Swearing stopped.", reply_markup=markup)
+    bot.send_message(message.chat.id, "Swearing stopped.")
     print("Swearing stopped")
 
 # Handle text messages for voice selection and text input
