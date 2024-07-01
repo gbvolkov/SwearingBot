@@ -8,6 +8,7 @@ import time
 import threading
 import random
 from swearing_gen import SwearingGenerator
+import requests
 
 # Initialize the bot with your token
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
@@ -94,5 +95,13 @@ def stop_swearing(message):
 
 # Start polling for new messages
 if __name__ == "__main__":
-    voices = get_all_voices()
-    bot.polling(none_stop=True)
+    while True:
+        try:
+            voices = get_all_voices()
+            bot.polling(none_stop=True, timeout=60)
+        except requests.exceptions.ReadTimeout:
+            print("ReadTimeout occurred, retrying...")
+            time.sleep(5)           
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            time.sleep(5)
