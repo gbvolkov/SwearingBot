@@ -22,6 +22,8 @@ def get_random_voice(voices):
 swearing_generator = SwearingGenerator()
 
 SWEAR_PROMPT = "Обзови Веронику. Пол: Женский. Возраст: 33 года."
+SWEAR_PERIOD = (6,18)
+REMINDER_PERIOD = (20, 30)
 
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
@@ -87,44 +89,41 @@ def voice_generator(sentence):
 # Dictionary to store PeriodicMessageSender instances
 chat_senders = {}
 
-@bot.message_handler(commands=['start'])
-def start_command(message):
-    chat_id = message.chat.id
+def start_stop(command, senders, chat_id):
     try:
-        if chat_id not in chat_senders or not chat_senders[chat_id]['swear'].active:
-            # Stop reminder messages if active
-            if chat_id in chat_senders and chat_senders[chat_id]['reminder'].active:
-                chat_senders[chat_id]['reminder'].stop()
-
-            if chat_id not in chat_senders:
-                chat_senders[chat_id] = {
-                    'swear': PeriodicMessageSender(chat_id, bot, swear_generator, voice_generator, (15, 35)),
-                    'reminder': PeriodicMessageSender(chat_id, bot, reminder_generator, None, (40, 65))
-                }
-            
-            chat_senders[chat_id]['swear'].start()
-            logger.info(f"Started swear messages for chat {chat_id}")
-        else:
-            logger.info(f"Swear messages are already active for chat {chat_id}")
+        for key, instance in senders.items():
+            if key == command:
+                if not instance.active:
+                    instance.start()
+                    logger.info(f"Started {key} messages for chat {chat_id}")
+            elif instance.active:
+                instance.stop()
+                logger.info(f"Stopped {key} messages for chat {chat_id}")
     except ApiTelegramException as e:
         logger.error(f"Telegram API error in start_command for chat {chat_id}: {e}")
     except Exception as e:
         logger.error(f"Unexpected error in start_command for chat {chat_id}: {e}")
 
-@bot.message_handler(commands=['stop'])
-def stop_command(message):
+@bot.message_handler(commands=['start'])
+def start_command(message):
     chat_id = message.chat.id
-    try:
-        if chat_id in chat_senders and chat_senders[chat_id]['swear'].active:
-            chat_senders[chat_id]['swear'].stop()
-            chat_senders[chat_id]['reminder'].start()
-            logger.info(f"Stopped swear messages and started reminder messages for chat {chat_id}")
-        else:
-            logger.info(f"Swear messages are not active for chat {chat_id}.")
-    except ApiTelegramException as e:
-        logger.error(f"Telegram API error in stop_command for chat {chat_id}: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error in stop_command for chat {chat_id}: {e}")
+    #initialize senders if not yest initialized
+    if chat_id not in chat_senders:
+            chat_senders[chat_id] = {
+                'swear': PeriodicMessageSender(chat_id, bot, swear_generator, voice_generator, SWEAR_PERIOD),
+                'pause': PeriodicMessageSender(chat_id, bot, reminder_generator, None, REMINDER_PERIOD)
+            }
+    #start/stop sender jobs
+    start_stop('swear', chat_senders[chat_id], chat_id)
+
+@bot.message_handler(commands=['stop', 'swear', 'pause'])
+def command(message):
+    command = message.text[1:]
+    chat_id = message.chat.id
+    if chat_id in chat_senders:
+        start_stop(command, chat_senders[chat_id], chat_id)
+    else:
+        logger.info(f"Messaging is not scheduled for chat {chat_id}. Command: {command}")
 
 def schedule_checker():
     while True:
