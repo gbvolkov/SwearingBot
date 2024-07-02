@@ -22,8 +22,8 @@ def get_random_voice(voices):
 swearing_generator = SwearingGenerator()
 
 SWEAR_PROMPT = "Обзови Веронику. Пол: Женский. Возраст: 33 года."
-SWEAR_PERIOD = (6,18)
-REMINDER_PERIOD = (20, 30)
+SWEAR_PERIOD = (90,180)
+REMINDER_PERIOD = (90*60, 180*60)
 
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
