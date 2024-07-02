@@ -6,6 +6,7 @@ import random
 import threading
 import logging
 from config import Config
+from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
 from voice_gen import generate_audio, get_all_voices
 
@@ -20,10 +21,17 @@ def get_random_voice(voices):
     return voices[random.randint(0, len(voices)-1)]
 
 swearing_generator = SwearingGenerator()
+colocutor = Colocutor()
+
+
+STACK_SIZE = 8
+# List to store the last messages
+conversation = []
 
 SWEAR_PROMPT = "Обзови Веронику. Пол: Женский. Возраст: 33 года."
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
+TALK_PERIOD = (15*60,240*60)
 
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
@@ -85,6 +93,8 @@ def voice_generator(sentence):
     voice_id = get_random_voice(voices)
     return generate_audio(sentence, voice_id['id'])
 
+def talk_generator():
+    return colocutor.get_answer(conversation)
 
 # Dictionary to store PeriodicMessageSender instances
 chat_senders = {}
@@ -111,12 +121,13 @@ def start_command(message):
     if chat_id not in chat_senders:
             chat_senders[chat_id] = {
                 'swear': PeriodicMessageSender(chat_id, bot, swear_generator, voice_generator, SWEAR_PERIOD),
-                'pause': PeriodicMessageSender(chat_id, bot, reminder_generator, None, REMINDER_PERIOD)
+                'pause': PeriodicMessageSender(chat_id, bot, reminder_generator, None, REMINDER_PERIOD),
+                'talk': PeriodicMessageSender(chat_id, bot, talk_generator, None, TALK_PERIOD)
             }
     #start/stop sender jobs
     start_stop('swear', chat_senders[chat_id], chat_id)
 
-@bot.message_handler(commands=['stop', 'swear', 'pause'])
+@bot.message_handler(commands=['stop', 'swear', 'pause', 'talk'])
 def command(message):
     command = message.text[1:]
     chat_id = message.chat.id
@@ -124,6 +135,17 @@ def command(message):
         start_stop(command, chat_senders[chat_id], chat_id)
     else:
         logger.info(f"Messaging is not scheduled for chat {chat_id}. Command: {command}")
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    global conversation
+    # Check if the message is sent by the bot itself
+    if message.from_user.id == bot.get_me().id:
+        return
+    conversation.append(message.text)
+    if len(conversation) > STACK_SIZE:
+        conversation.pop(0)
+    print(conversation)
 
 def schedule_checker():
     while True:
