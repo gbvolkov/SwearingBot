@@ -100,7 +100,7 @@ def voice_generator(sentence):
     voice_id = get_random_voice(voices)
     return generate_audio(sentence, voice_id['id'])
 
-def silerovoice_generator(sentence):
+def silero_voice_generator(sentence):
     voice_id = get_random_voice(silero_voices)
     return TTSGenerator.generate_voice(translit2rus(sentence), voice_id)
 
@@ -131,7 +131,7 @@ def start_command(message):
     #initialize senders if not yest initialized
     if chat_id not in chat_senders:
             chat_senders[chat_id] = {
-                'swear': PeriodicMessageSender(chat_id, bot, swear_generator, voice_generator, SWEAR_PERIOD),
+                'swear': PeriodicMessageSender(chat_id, bot, swear_generator, silero_voice_generator, SWEAR_PERIOD),
                 'pause': PeriodicMessageSender(chat_id, bot, reminder_generator, None, REMINDER_PERIOD),
                 'talk': PeriodicMessageSender(chat_id, bot, talk_generator, None, TALK_PERIOD)
             }
