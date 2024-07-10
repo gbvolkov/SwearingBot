@@ -18,10 +18,11 @@ logger = logging.getLogger(__name__)
 # Initialize bot
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
 voices = get_all_voices()
+print(voices)
 sample_rate = 48000
 tts = TTSGenerator(sample_rate)
 silero_voices = tts.get_all_voices()
-print(voices)
+print(silero_voices)
 
 
 def get_random_voice(voices):
@@ -102,7 +103,7 @@ def voice_generator(sentence):
 
 def silero_voice_generator(sentence):
     voice_id = get_random_voice(silero_voices)
-    return TTSGenerator.generate_voice(translit2rus(sentence), voice_id)
+    return tts.generate_voice(text = translit2rus(sentence), speaker = voice_id)
 
 def talk_generator():
     return colocutor.get_answer(conversation)

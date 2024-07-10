@@ -1,6 +1,9 @@
 import os
 import torch
 from num2words import num2words
+import io
+import soundfile as sf
+
 
 def translit2rus(text):
     translit_map = {
@@ -67,10 +70,18 @@ class TTSGenerator():
 	def get_all_voices(self):
 		return self.model.speakers
 	
-	def generate_voice(self, text, speaker, output_file):
-		self.model.save_wav(text=text,
+	def generate_voice_to_file(self, text, speaker, output_file):
+		return self.model.save_wav(text=text,
                              speaker=speaker,
                              sample_rate=self.sample_rate,
                              audio_path=output_file)
 		
+	def generate_voice(self, text, speaker):
+		audio = self.model.apply_tts(text=text,
+                             speaker=speaker,
+                             sample_rate=self.sample_rate)
+		buffer = io.BytesIO()
+		sf.write(buffer, audio.numpy(), self.sample_rate, format='WAV')
+		buffer.seek(0)
+		return buffer
 	
