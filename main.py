@@ -8,7 +8,8 @@ import logging
 from config import Config
 from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
-from voice_gen import generate_audio, get_all_voices
+#from voice_gen import generate_audio, get_all_voices
+from tts_gen import TTSGenerator, translit2rus
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -16,7 +17,13 @@ logger = logging.getLogger(__name__)
 
 # Initialize bot
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
-voices = get_all_voices()
+#voices = get_all_voices()
+sample_rate = 48000
+tts = TTSGenerator(sample_rate)
+voices = tts.get_all_voices()
+print(voices)
+
+
 def get_random_voice(voices):
     return voices[random.randint(0, len(voices)-1)]
 
@@ -91,7 +98,7 @@ def reminder_generator():
 
 def voice_generator(sentence):
     voice_id = get_random_voice(voices)
-    return generate_audio(sentence, voice_id['id'])
+    return TTSGenerator.generate_voice(translit2rus(sentence), voice_id['id'])
 
 def talk_generator():
     return colocutor.get_answer(conversation)
