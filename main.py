@@ -8,7 +8,7 @@ import logging
 from config import Config
 from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
-#from voice_gen import generate_audio, get_all_voices
+from voice_gen import generate_audio, get_all_voices
 from tts_gen import TTSGenerator, translit2rus
 
 # Set up logging
@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 # Initialize bot
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
-#voices = get_all_voices()
+voices = get_all_voices()
 sample_rate = 48000
 tts = TTSGenerator(sample_rate)
-voices = tts.get_all_voices()
+silero_voices = tts.get_all_voices()
 print(voices)
 
 
@@ -56,7 +56,7 @@ class PeriodicMessageSender:
         try:
             message = self.message_generator()
             self.bot.send_message(self.chat_id, message)
-            if self.voice_generator and random.randint(0, 9) >= 9:
+            if self.voice_generator and random.randint(0, 9) >= 0:
                 voice = self.voice_generator(message)
                 self.bot.send_voice(self.chat_id, voice)
             logger.info(f"Sent message {message} to chat {self.chat_id}")
@@ -98,7 +98,11 @@ def reminder_generator():
 
 def voice_generator(sentence):
     voice_id = get_random_voice(voices)
-    return TTSGenerator.generate_voice(translit2rus(sentence), voice_id['id'])
+    return generate_audio(sentence, voice_id['id'])
+
+def silerovoice_generator(sentence):
+    voice_id = get_random_voice(silero_voices)
+    return TTSGenerator.generate_voice(translit2rus(sentence), voice_id)
 
 def talk_generator():
     return colocutor.get_answer(conversation)
