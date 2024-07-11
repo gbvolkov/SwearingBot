@@ -65,7 +65,7 @@ class TTSGenerator():
 										local_file)
 		self.model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
 		self.model.to(device)
-		return
+
 
 	def get_all_voices(self):
 		return self.model.speakers
