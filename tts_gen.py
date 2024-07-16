@@ -71,13 +71,13 @@ class TTSGenerator():
 		return self.model.speakers
 	
 	def generate_voice_to_file(self, text, speaker, output_file):
-		return self.model.save_wav(text=text,
+		return self.model.save_wav(ssml_text=text,
                              speaker=speaker,
                              sample_rate=self.sample_rate,
                              audio_path=output_file)
 		
 	def generate_voice(self, text, speaker):
-		audio = self.model.apply_tts(text=text,
+		audio = self.model.apply_tts(ssml_text=text,
                              speaker=speaker,
                              sample_rate=self.sample_rate)
 		buffer = io.BytesIO()

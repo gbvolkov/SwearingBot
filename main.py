@@ -36,7 +36,7 @@ STACK_SIZE = 8
 # List to store the last messages
 conversation = []
 
-SWEAR_PROMPT = "Обзови Веронику. Пол: Женский. Возраст: 33 года."
+SWEAR_PROMPT = "Обзови Алису. Пол: Женский. Возраст: 20 лет."
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
 TALK_PERIOD = (15*60,240*60)
@@ -57,7 +57,7 @@ class PeriodicMessageSender:
         try:
             message = self.message_generator()
             self.bot.send_message(self.chat_id, message)
-            if self.voice_generator and random.randint(0, 9) >= 0:
+            if self.voice_generator and random.randint(0, 9) >= 7:
                 voice = self.voice_generator(message)
                 self.bot.send_voice(self.chat_id, voice)
             logger.info(f"Sent message {message} to chat {self.chat_id}")
