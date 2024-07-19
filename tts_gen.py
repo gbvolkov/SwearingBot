@@ -52,6 +52,9 @@ def float2text(number):
         kopecks_text = ""
     return f"{rubles_text} {kopecks_text}"
 
+def is_speak_xml(text):
+    return text.strip().startswith("<speak>") and text.strip().endswith("</speak>")
+
 class TTSGenerator():
 	def __init__(self, sample_rate):
 		self.sample_rate = sample_rate
@@ -71,15 +74,19 @@ class TTSGenerator():
 		return self.model.speakers
 	
 	def generate_voice_to_file(self, text, speaker, output_file):
-		return self.model.save_wav(ssml_text=text,
-                             speaker=speaker,
-                             sample_rate=self.sample_rate,
-                             audio_path=output_file)
+		ssml_text = text if is_speak_xml(text) else None
+		plain_text = None if is_speak_xml(text) else text
+		return self.model.save_wav(text=plain_text, ssml_text=ssml_text,
+                                speaker=speaker,
+                                sample_rate=self.sample_rate,
+                                audio_path=output_file)
 		
 	def generate_voice(self, text, speaker):
-		audio = self.model.apply_tts(ssml_text=text,
-                             speaker=speaker,
-                             sample_rate=self.sample_rate)
+		ssml_text = text if is_speak_xml(text) else None
+		plain_text = None if is_speak_xml(text) else text
+		audio = self.model.apply_tts(text=plain_text, ssml_text=ssml_text,
+                                speaker=speaker,
+                                sample_rate=self.sample_rate)
 		buffer = io.BytesIO()
 		sf.write(buffer, audio.numpy(), self.sample_rate, format='WAV')
 		buffer.seek(0)
