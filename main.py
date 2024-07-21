@@ -8,6 +8,7 @@ import logging
 from config import Config
 from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
+from news_post_gen import NewsPostGenerator
 from voice_gen import generate_audio, get_all_voices
 from tts_gen import TTSGenerator, translit2rus
 
@@ -30,16 +31,16 @@ def get_random_voice(voices):
 
 swearing_generator = SwearingGenerator()
 colocutor = Colocutor()
+news_post_creator = NewsPostGenerator()
 
 
-STACK_SIZE = 8
-# List to store the last messages
-conversation = []
+STACK_SIZE = 16
 
 SWEAR_PROMPT = "Обзови Алису. Пол: Женский. Возраст: 20 лет."
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
 TALK_PERIOD = (15*60,240*60)
+NEWS_PERIOD = (90*60,240*60)
 
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
@@ -55,10 +56,10 @@ class PeriodicMessageSender:
         if not self.active:
             return
         try:
-            message = self.message_generator()
+            message = self.message_generator(self)
             self.bot.send_message(self.chat_id, message)
             if self.voice_generator and random.randint(0, 9) >= 7:
-                voice = self.voice_generator(message)
+                voice = self.voice_generator(self, message)
                 self.bot.send_voice(self.chat_id, voice)
             logger.info(f"Sent message {message} to chat {self.chat_id}")
         except ApiTelegramException as e:
@@ -90,26 +91,38 @@ class PeriodicMessageSender:
             logger.info(f"Stopped periodic messages for chat {self.chat_id}")
 
 # Message generators
-def swear_generator():
+def swear_generator(sender):
     return swearing_generator.get_answer(SWEAR_PROMPT)
 
-def reminder_generator():
+def reminder_generator(sender):
     sentences = ["Вертится что-то на языке...", "Эхх....", "Поругаемся?", "Ну что?"]
     return sentences[random.randint(0, len(sentences)-1)]
 
-def voice_generator(sentence):
+def voice_generator(sender, sentence):
     voice_id = get_random_voice(voices)
     return generate_audio(sentence, voice_id['id'])
 
-def silero_voice_generator(sentence):
+def silero_voice_generator(sender, sentence):
     voice_id = get_random_voice(silero_voices)
     return tts.generate_voice(text = translit2rus(sentence), speaker = voice_id)
 
-def talk_generator():
-    return colocutor.get_answer(conversation)
+def talk_generator(sender):
+    chat_id = sender.chat_id
+    conversations = []
+    if chat_id in chats_conversations:
+        conversations = chats_conversations[chat_id]
+    return colocutor.get_answer(conversations)
+
+def news_post_generator(sender):
+    chat_id = sender.chat_id
+    conversations = []
+    if chat_id in chats_conversations:
+        conversations = chats_conversations[chat_id]
+    return news_post_creator.get_answer(conversations)
 
 # Dictionary to store PeriodicMessageSender instances
 chat_senders = {}
+chats_conversations = {}
 
 def start_stop(command, senders, chat_id):
     try:
@@ -134,12 +147,13 @@ def start_command(message):
             chat_senders[chat_id] = {
                 'swear': PeriodicMessageSender(chat_id, bot, swear_generator, silero_voice_generator, SWEAR_PERIOD),
                 'pause': PeriodicMessageSender(chat_id, bot, reminder_generator, None, REMINDER_PERIOD),
-                'talk': PeriodicMessageSender(chat_id, bot, talk_generator, None, TALK_PERIOD)
+                'talk': PeriodicMessageSender(chat_id, bot, talk_generator, None, TALK_PERIOD),
+                'news': PeriodicMessageSender(chat_id, bot, news_post_generator, None, NEWS_PERIOD)
             }
     #start/stop sender jobs
     start_stop('swear', chat_senders[chat_id], chat_id)
 
-@bot.message_handler(commands=['stop', 'swear', 'pause', 'talk'])
+@bot.message_handler(commands=['stop', 'swear', 'pause', 'talk', 'news'])
 def command(message):
     command = message.text[1:]
     chat_id = message.chat.id
@@ -148,16 +162,23 @@ def command(message):
     else:
         logger.info(f"Messaging is not scheduled for chat {chat_id}. Command: {command}")
 
+def add_conversation(conversations, conversation):
+    conversations.append(conversation)
+    if len(conversations) > STACK_SIZE:
+        conversations.pop(0)
+    print(conversations)
+
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
-    global conversation
-    # Check if the message is sent by the bot itself
     if message.from_user.id == bot.get_me().id:
         return
-    conversation.append(message.text)
-    if len(conversation) > STACK_SIZE:
-        conversation.pop(0)
-    print(conversation)
+    # Check if the message is sent by the bot itself
+    chat_id = message.chat.id
+    if chat_id in chats_conversations:
+        add_conversation(chats_conversations[chat_id], message.text)
+    else:
+        chats_conversations[chat_id] = [message.text]
+        print(chats_conversations[chat_id])
 
 def schedule_checker():
     while True:

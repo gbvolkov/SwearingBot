@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import uuid
+from config import Config
 
 
 
@@ -12,9 +13,9 @@ headers_sber = {
   'Authorization': 'Basic <авторизацонные_данные>'
 }
 SCOPE_SBER = "GIGACHAT_API_PERS"
-GIGA_CHAT_USER_ID="053e56f6-00d6-4386-99b6-d8a2d958ad14"
-GIGA_CHAT_SECRET = "63614477-f798-449c-952c-f40d59bb43d4"
-GIGA_CHAT_AUTH = "MDUzZTU2ZjYtMDBkNi00Mzg2LTk5YjYtZDhhMmQ5NThhZDE0OjYzNjE0NDc3LWY3OTgtNDQ5Yy05NTJjLWY0MGQ1OWJiNDNkNA=="
+GIGA_CHAT_USER_ID=Config.GIGA_CHAT_USER_ID
+GIGA_CHAT_SECRET = Config.GIGA_CHAT_SECRET
+GIGA_CHAT_AUTH = Config.GIGA_CHAT_AUTH
 SYSTEM_PROMPT = """
 Ты очень весёлый, яркий и язвительный человек.
 Ты должен придумывать ровно одно самое страшное шутливое ругательство. 

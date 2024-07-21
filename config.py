@@ -10,4 +10,8 @@ load_dotenv(os.path.join(documents_path, 'gv.env'))
 class Config:
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY')
-    TELEGRAM_BOT_TOKEN = "7055842831:AAFaeeZt_2F1ccZ6LWq26IPHhaRAnTSG7aQ" #bot
+    TELEGRAM_BOT_TOKEN = os.environ.get('PUBLISHING_BOT_TOKEN')
+    GIGA_CHAT_USER_ID=os.environ.get('GIGA_CHAT_USER_ID')
+    GIGA_CHAT_SECRET = os.environ.get('GIGA_CHAT_SECRET')
+    GIGA_CHAT_AUTH = os.environ.get('GIGA_CHAT_AUTH')
+    NEWSAPI_API_KEY = os.environ.get('NEWSAPI_API_KEY')
