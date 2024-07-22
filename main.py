@@ -71,7 +71,7 @@ def escape_markdown_v2(text):
     result = []
     i = 0
     while i < len(text):
-        if text[i] == '\\' and i + 1 < len(text) and text[i+1] in special_chars + '*':
+        if text[i] == '\\' and i + 1 < len(text) and text[i+1] in f"{special_chars}*":
             result.append(text[i:i+2])  # Keep existing escapes
             i += 2
         elif text[i] == '*':
