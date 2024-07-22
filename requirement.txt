@@ -8,3 +8,4 @@ torch
 numpy
 num2words
 soundfile
+langchain_openai

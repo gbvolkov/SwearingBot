@@ -9,8 +9,10 @@ from config import Config
 from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
 from news_post_gen import NewsPostGenerator
+from news_post_gen_v2 import NewsPostGenerator_v2
 from voice_gen import generate_audio, get_all_voices
 from tts_gen import TTSGenerator, translit2rus
+import re
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,16 +33,58 @@ def get_random_voice(voices):
 
 swearing_generator = SwearingGenerator()
 colocutor = Colocutor()
-news_post_creator = NewsPostGenerator()
+news_post_creator = NewsPostGenerator_v2()
 
 
 STACK_SIZE = 16
 
-SWEAR_PROMPT = "Обзови Алису. Пол: Женский. Возраст: 20 лет."
+SWEAR_PROMPT = "Обзови Нику. Пол: Женский. Возраст: 33 года."
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
+#REMINDER_PERIOD = (2, 4)
 TALK_PERIOD = (15*60,240*60)
-NEWS_PERIOD = (90*60,240*60)
+NEWS_PERIOD = (180*60,360*60)
+#NEWS_PERIOD = (2,10)
+
+
+def escape_markdown_v2(text):
+    # Characters that need escaping
+    special_chars = r'_[]()~`>#+=|{}.!-'  # Added '-' to the list
+
+    def escape_char(c):
+        return '\\' + c if c in special_chars else c
+
+    def handle_formatting(text):
+        # Handle bold (asterisks)
+        text = re.sub(r'\*\*(.+?)\*\*', r'*\1*', text)  # Replace ** with *
+        text = re.sub(r'(?<!\\)\*(.+?)(?<!\\)\*', r'*\1*', text)  # Keep single * as is
+
+        # Handle italic (underscores)
+        text = re.sub(r'(?<!\\)_(.+?)(?<!\\)_', r'*\1*', text)  # Replace _ with *
+
+        return text
+
+    # First, handle formatting (bold and italic)
+    text = handle_formatting(text)
+
+    # Then escape special characters, preserving existing escapes
+    result = []
+    i = 0
+    while i < len(text):
+        if text[i] == '\\' and i + 1 < len(text) and text[i+1] in special_chars + '*':
+            result.append(text[i:i+2])  # Keep existing escapes
+            i += 2
+        elif text[i] == '*':
+            result.append('*')  # Keep * for formatting
+            i += 1
+        elif text[i] in special_chars:
+            result.append('\\' + text[i])  # Escape special chars
+            i += 1
+        else:
+            result.append(text[i])  # Regular character
+            i += 1
+
+    return ''.join(result)
 
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
@@ -57,7 +101,7 @@ class PeriodicMessageSender:
             return
         try:
             message = self.message_generator(self)
-            self.bot.send_message(self.chat_id, message)
+            self.bot.send_message(self.chat_id, escape_markdown_v2(message), parse_mode='MarkdownV2')
             if self.voice_generator and random.randint(0, 9) >= 7:
                 voice = self.voice_generator(self, message)
                 self.bot.send_voice(self.chat_id, voice)
@@ -95,7 +139,7 @@ def swear_generator(sender):
     return swearing_generator.get_answer(SWEAR_PROMPT)
 
 def reminder_generator(sender):
-    sentences = ["Вертится что-то на языке...", "Эхх....", "Поругаемся?", "Ну что?"]
+    sentences = ["_Вертится_ __что-то__ на **языке**...", "**Эх**х....", "~Поругаемся~ может?", "Ну *что*?"]
     return sentences[random.randint(0, len(sentences)-1)]
 
 def voice_generator(sender, sentence):
@@ -142,6 +186,11 @@ def start_stop(command, senders, chat_id):
 @bot.message_handler(commands=['start'])
 def start_command(message):
     chat_id = message.chat.id
+    test_message = "*_Hello_* _world_\! This ***is*** a *test*\.\*asterisk"
+    escaped_message = escape_markdown_v2(test_message)
+    print(escaped_message)
+    bot.send_message(chat_id, escaped_message, parse_mode='MarkdownV2')
+
     #initialize senders if not yest initialized
     if chat_id not in chat_senders:
             chat_senders[chat_id] = {
@@ -202,6 +251,28 @@ def run_bot():
 
 if __name__ == "__main__":
     # Start the schedule checker in a separate thread
+    test_cases = [
+    "Hello *world*",
+    "This **is** bold",
+    "This *is* also bold",
+    "Unmatched *asterisk",
+    "Escaped \\*asterisk",
+    "Multiple **underscores**",
+    "Mixed *formatting*",
+    "Too many ***asterisks***",
+    "Special chars: [brackets] (parentheses)",
+    "Numbers and +plus -minus =equals",
+    "Punctuation! With. Escaping?",
+    "world\\!"
+    ]
+    escaped = []
+    for case in test_cases:
+        print(f"Original: {case}")
+        escaped_text = escape_markdown_v2(case)
+        escaped.append(escaped_text)
+        print(f"Escaped:  {escaped_text}")
+        print()
+
     checker_thread = threading.Thread(target=schedule_checker)
     checker_thread.start()
 
