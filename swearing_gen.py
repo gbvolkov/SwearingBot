@@ -19,7 +19,7 @@ class SwearingGenerator():
 	
 	def get_answer(self, question):
 		response = self.client.chat.completions.create(
-			model = "gpt-3.5-turbo",
+			model = "gpt-40-mini",
 			messages=[
 				{"role": "system", "content": SYSTEM_PROMPT},
 				{"role": "user", "content": question}
