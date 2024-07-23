@@ -2,6 +2,8 @@ from langchain_openai import OpenAI
 from config import Config
 import requests
 from langchain.prompts import PromptTemplate
+from random import randint
+from converstion_complete import Colocutor
 
 NEWS_API_KEY = Config.NEWSAPI_API_KEY
 
@@ -81,6 +83,8 @@ class NewsPostGenerator_v2():
 
 
     def get_answer(self, questions):
+        if randint(1, 3) == 3:
+            return Colocutor().get_answer(questions)
         #print(f"conversation: {questions}")
         topic = self.get_news_topic(questions)
         #print(f"news topic: {topic}")

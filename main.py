@@ -186,10 +186,6 @@ def start_stop(command, senders, chat_id):
 @bot.message_handler(commands=['start'])
 def start_command(message):
     chat_id = message.chat.id
-    test_message = "*_Hello_* _world_\! This ***is*** a *test*\.\*asterisk"
-    escaped_message = escape_markdown_v2(test_message)
-    print(escaped_message)
-    bot.send_message(chat_id, escaped_message, parse_mode='MarkdownV2')
 
     #initialize senders if not yest initialized
     if chat_id not in chat_senders:
@@ -249,8 +245,7 @@ def run_bot():
             logger.error(f"Unexpected error in bot polling: {e}")
             time.sleep(5)
 
-if __name__ == "__main__":
-    # Start the schedule checker in a separate thread
+def test_escape():
     test_cases = [
     "Hello *world*",
     "This **is** bold",
@@ -272,6 +267,9 @@ if __name__ == "__main__":
         escaped.append(escaped_text)
         print(f"Escaped:  {escaped_text}")
         print()
+
+if __name__ == "__main__":
+    # Start the schedule checker in a separate thread
 
     checker_thread = threading.Thread(target=schedule_checker)
     checker_thread.start()
