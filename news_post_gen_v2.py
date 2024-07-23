@@ -29,63 +29,40 @@ class NewsPostGenerator_v2():
         return
 
     def get_news_topic(self, conversation):
-        # Topic generation
-        params = {"conversation": conversation}
-        template = "Based on the following conversation, generate a relevant news topic to retrieve news from newsapi.org. It should not be more than two words:\n\n{conversation}\n\nTopic:"
-        return run_chain(template, params, self.llm)
-        #topic_prompt = PromptTemplate(
-        #    input_variables=["conversation"],
-        #    template="Based on the following conversation, generate a relevant news topic to retrieve news from newsapi.org. It should not be more than two words:\n\n{conversation}\n\nTopic:",
-        #)
-        #topic_chain = topic_prompt | self.llm #LLMChain(llm=llm, prompt=topic_prompt)
-        #return topic_chain.invoke(conversation).content
+        # Generate news topic
+        return run_chain(
+            "Based on the following conversation, generate a relevant news topic to retrieve news from newsapi.org. It should not be more than two words:\n\n{conversation}\n\nTopic:", 
+            {"conversation": conversation}, 
+            self.llm)
     
 
     def generate_news_summary(self, articles):
-        params = {"articles": articles}
-        template = "Summarize the following news articles in one sentence:\n\n{articles}\n\nSummary:"
-        return run_chain(template, params, self.llm)
-        #summary_prompt = PromptTemplate(
-        #    input_variables=["articles"],
-        #    template="Summarize the following news articles in one sentence:\n\n{articles}\n\nSummary:",
-        #)
-        #summary_chain = summary_prompt | self.llm #LLMChain(llm=llm, prompt=summary_prompt)
-        #return summary_chain.invoke(articles).content
+        # Generate news summary
+        return run_chain(
+            "Summarize the following news articles in one sentence:\n\n{articles}\n\nSummary:", 
+            {"articles": articles}, 
+            self.llm)
 
     def generate_news_title(self, summary):
-        params = {"summary": summary}
-        template = "Generate a clear, explanatory title in Russian for this summary:\n\n{summary}\n\nTitle:"
-        return run_chain(template, params, self.llm)
-        #title_prompt = PromptTemplate(
-        #    input_variables=["summary"],
-        #    template="Generate a clear, explanatory title in Russian for this summary:\n\n{summary}\n\nTitle:",
-        #)
-        #title_chain = title_prompt | self.llm #LLMChain(llm=llm, prompt=title_prompt)
-        #return title_chain.invoke(summary).content
+        # Generate post title
+        return run_chain(
+            "Generate a clear, explanatory title in Russian for this summary:\n\n{summary}\n\nTitle:", 
+            {"summary": summary}, 
+            self.llm)
 
     def generate_news_post(self, summary):
         # Generate post
-        params = {"summary": summary}
-        template = "Generate a clear post in Russian based on this summary (max 512 characters, do not split by articles, express in one sentence, add emojies and format with MarkdownV2 to highligh most important parts):\n\n{summary}\n\nPost:"
-        return run_chain(template, params, self.llm)
-        #post_prompt = PromptTemplate(
-        #    input_variables=["summary"],
-        #    template="Generate a clear post in Russian based on this summary (max 512 characters, do not split by articles, express in one sentence, add emojies and format with MarkdownV2 to highligh most important parts):\n\n{summary}\n\nPost:",
-        #)
-        #post_chain = post_prompt | self.llm #LLMChain(llm=llm, prompt=post_prompt)
-        #return post_chain.invoke(summary).content#[:512]
+        return run_chain(
+            "Generate a clear post in Russian based on this summary (max 512 characters, do not split by articles, express in one sentence, add emojies and format with MarkdownV2 to highligh most important parts):\n\n{summary}\n\nPost:", 
+            {"summary": summary}, 
+            self.llm)
 
     def generate_news_metadata(self, summary, articles):
         # Generate metadata
-        params = {"summary": summary, "articles": articles}
-        template = "Generate metadata for this post, including a short description and links to the original news articles:\n\nSummary: {summary}\n\nArticles: {articles}\n\nMetadata:"
-        return run_chain(template, params, self.llm)
-        #metadata_prompt = PromptTemplate(
-        #    input_variables=["summary", "articles"],
-        #    template="Generate metadata for this post, including a short description and links to the original news articles:\n\nSummary: {summary}\n\nArticles: {articles}\n\nMetadata:",
-        #)
-        #metadata_chain = metadata_prompt | self.llm #LLMChain(llm=llm, prompt=metadata_prompt)
-        #return metadata_chain.invoke(input={"summary": summary, "articles": articles}).content
+        return run_chain(
+            "Generate metadata for this post, including a short description and links to the original news articles:\n\nSummary: {summary}\n\nArticles: {articles}\n\nMetadata:", 
+            {"summary": summary, "articles": articles}, 
+            self.llm)
 
     def generate_post(self, topic):
         news = get_news(topic, NEWS_API_KEY)
@@ -94,8 +71,6 @@ class NewsPostGenerator_v2():
         title = self.generate_news_title(summary)
         post = self.generate_news_post(summary)
         metadata = "\n\n".join([f"[{article['title']}]({article['url']})" for article in news['articles']])
-        #metadata = self.generate_news_metadata(summary, articles)
-
         return {
             "title": f"*{title}*",
             "meta_description": f"{metadata}",
@@ -106,11 +81,8 @@ class NewsPostGenerator_v2():
     def get_answer(self, questions):
         if randint(1, 3) == 3:
             return Colocutor().get_answer(questions)
-        #print(f"conversation: {questions}")
         topic = self.get_news_topic(questions)
-        #print(f"news topic: {topic}")
         post = self.generate_post(topic)
-        
         return f"{post['title']}\n\n{post['post_content']}\n\n{post['meta_description']}"
 
 if __name__ == "__main__":
