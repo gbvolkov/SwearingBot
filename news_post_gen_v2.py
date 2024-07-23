@@ -1,4 +1,4 @@
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from config import Config
 import requests
 from langchain.prompts import PromptTemplate
@@ -15,7 +15,7 @@ def get_news(topic, api_key, page_size=3):
 
 class NewsPostGenerator_v2():
     def __init__(self):
-        self.llm = OpenAI(api_key=Config.OPENAI_API_KEY, temperature=0.7)
+        self.llm = ChatOpenAI(api_key=Config.OPENAI_API_KEY, temperature=0.7, model="gpt-4o-mini")
         return
 
     def get_news_topic(self, conversation):
@@ -25,17 +25,17 @@ class NewsPostGenerator_v2():
             template="Based on the following conversation, generate a relevant news topic to retrieve news from newsapi.org. It should not be more than two words:\n\n{conversation}\n\nTopic:",
         )
         topic_chain = topic_prompt | self.llm #LLMChain(llm=llm, prompt=topic_prompt)
-        return topic_chain.invoke(conversation)
+        return topic_chain.invoke(conversation).content
     
 
     def generate_news_summary(self, articles):
         summary_prompt = PromptTemplate(
             input_variables=["articles"],
-            template="Summarize the following news articles:\n\n{articles}\n\nSummary:",
+            template="Summarize the following news articles in one sentence:\n\n{articles}\n\nSummary:",
         )
         summary_chain = summary_prompt | self.llm #LLMChain(llm=llm, prompt=summary_prompt)
         
-        return summary_chain.invoke(articles)
+        return summary_chain.invoke(articles).content
 
     def generate_news_title(self, summary):
         title_prompt = PromptTemplate(
@@ -44,17 +44,17 @@ class NewsPostGenerator_v2():
         )
         title_chain = title_prompt | self.llm #LLMChain(llm=llm, prompt=title_prompt)
 
-        return title_chain.invoke(summary)
+        return title_chain.invoke(summary).content
 
     def generate_news_post(self, summary):
         # Generate post
         post_prompt = PromptTemplate(
             input_variables=["summary"],
-            template="Generate a clear post in Russian based on this summary (max 512 characters, add emojies and format with MarkdownV2 to highligh most important parts):\n\n{summary}\n\nPost:",
+            template="Generate a clear post in Russian based on this summary (max 512 characters, do not split by articles, express in one sentence, add emojies and format with MarkdownV2 to highligh most important parts):\n\n{summary}\n\nPost:",
         )
         post_chain = post_prompt | self.llm #LLMChain(llm=llm, prompt=post_prompt)
 
-        return post_chain.invoke(summary)[:512]
+        return post_chain.invoke(summary).content#[:512]
 
     def generate_news_metadata(self, summary, articles):
         # Generate metadata
@@ -64,7 +64,7 @@ class NewsPostGenerator_v2():
         )
         metadata_chain = metadata_prompt | self.llm #LLMChain(llm=llm, prompt=metadata_prompt)
 
-        return metadata_chain.invoke(input={"summary": summary, "articles": articles})
+        return metadata_chain.invoke(input={"summary": summary, "articles": articles}).content
 
     def generate_post(self, topic):
         news = get_news(topic, NEWS_API_KEY)
