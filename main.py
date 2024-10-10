@@ -38,7 +38,7 @@ news_post_creator = NewsPostGenerator_v2()
 
 STACK_SIZE = 16
 
-SWEAR_PROMPT = "Обзови Алису. Пол: Женский. Возраст: 20 лет."
+SWEAR_PROMPT = Config.SWEAR_PROMPT # "Обзови Алису. Пол: Женский. Возраст: 20 лет."
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
 #REMINDER_PERIOD = (2, 4)
