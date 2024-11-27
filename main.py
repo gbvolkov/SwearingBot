@@ -102,7 +102,7 @@ class PeriodicMessageSender:
         try:
             message = self.message_generator(self)
             self.bot.send_message(self.chat_id, escape_markdown_v2(message), parse_mode='MarkdownV2')
-            if self.voice_generator and random.randint(0, 9) >= 0:
+            if self.voice_generator and random.randint(0, 9) >= 7:
                 voice = self.voice_generator(self, message)
                 self.bot.send_voice(self.chat_id, voice)
             logger.info(f"Sent message {message} to chat {self.chat_id}")
