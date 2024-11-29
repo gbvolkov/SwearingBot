@@ -16,3 +16,4 @@ class Config:
     GIGA_CHAT_AUTH = os.environ.get('GIGA_CHAT_AUTH')
     NEWSAPI_API_KEY = os.environ.get('NEWSAPI_API_KEY')
     SWEAR_PROMPT = os.environ.get('SWEAR_PROMPT')
+    SILERO_LOCAL_PATH = os.environ.get('SILERO_LOCAL_PATH')
