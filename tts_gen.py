@@ -3,7 +3,7 @@ import torch
 from num2words import num2words
 import io
 import soundfile as sf
-
+import config
 
 def translit2rus(text):
     translit_map = {
@@ -61,7 +61,7 @@ class TTSGenerator():
 
 		device = torch.device('cpu')
 		torch.set_num_threads(4)
-		local_file = 'v4_ru.pt'
+		local_file = config.SILERO_LOCAL_PATH# + 'v4_ru.pt'
 
 		if not os.path.isfile(local_file):
 			torch.hub.download_url_to_file('https://models.silero.ai/models/tts/ru/v4_ru.pt',
