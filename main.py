@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 # Initialize bot
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
 voices = get_all_voices()
-print(voices)
+logger.info(voices)
 sample_rate = 48000
 tts = TTSGenerator(sample_rate)
 silero_voices = tts.get_all_voices()
-print(silero_voices)
+logger.info(silero_voices)
 
 
 def get_random_voice(voices):
@@ -211,7 +211,7 @@ def add_conversation(conversations, conversation):
     conversations.append(conversation)
     if len(conversations) > STACK_SIZE:
         conversations.pop(0)
-    print(conversations)
+    logger.info(conversations)
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -221,9 +221,10 @@ def handle_message(message):
     chat_id = message.chat.id
     if chat_id in chats_conversations:
         add_conversation(chats_conversations[chat_id], message.text)
+        logger.info(f'New conversation for chat {chat_id}: {chats_conversations[chat_id]}')
     else:
         chats_conversations[chat_id] = [message.text]
-        print(chats_conversations[chat_id])
+        logger.info(chats_conversations[chat_id])
 
 def schedule_checker():
     while True:
@@ -263,11 +264,11 @@ def test_escape():
     escaped = []
 # sourcery skip: no-loop-in-tests
     for case in test_cases:
-        print(f"Original: {case}")
+        logger.info(f"Original: {case}")
         escaped_text = escape_markdown_v2(case)
         escaped.append(escaped_text)
-        print(f"Escaped:  {escaped_text}")
-        print()
+        logger.info(f"Escaped:  {escaped_text}")
+        logger.info()
 
 if __name__ == "__main__":
     # Start the schedule checker in a separate thread
