@@ -1,8 +1,12 @@
 from openai import OpenAI
 from config import Config
 import requests
+import logging
 
 NEWSAPI_API_KEY = Config.NEWSAPI_API_KEY
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def get_recent_news(topic):
     url = f"https://newsapi.org/v2/everything?q={topic}&apiKey={NEWSAPI_API_KEY}"
@@ -11,7 +15,7 @@ def get_recent_news(topic):
     titles = [article["title"] for article in articles[:3]]
     urls = [article["url"] for article in articles[:3]]
     descriptions = [article["description"] for article in articles[:3]]
-    print(f"news found: {"\n".join(titles)}")
+    logger.info(f"news found: {"\n".join(titles)}")
     return {"titles":"\n".join(titles),
             "links":"\n".join(urls),
             "descriptions":"####\n".join(descriptions)}
@@ -55,9 +59,9 @@ Your answer should not contain more than three words."""
             temperature=0.7,
         )
         title = response_title.choices[0].message.content.strip()
-        #print(f"post title: {title}")
+        #logger.info(f"post title: {title}")
 
-        prompt_meta = f"Write a brief but informative meta description for the post with the title: {title}. Do not include title in the meta description. Answer in Russian. Add formattings and emojies to make it attractive post description at Telegram. This should be displayed in the fine printю"
+        prompt_meta = f"Write a brief but informative meta description for the post with the title: {title}. Do not include title in the meta description. Answer in Russian. Add formattings and emojies to make it attractive post description at Telegram. This should be displayed in the fine print."
         response_meta = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt_meta}],
@@ -67,7 +71,7 @@ Your answer should not contain more than three words."""
             temperature=0.7,
         )
         meta_description = response_meta.choices[0].message.content.strip()
-        #print(f"post meta: {meta_description}")
+        #logger.info(f"post meta: {meta_description}")
 
         prompt_post = f"Write a detailed and engaging blog post on {topic}, keeping in mind the following recent news:\n{recent_news}\n\n\n\n Use short paragraphs, subheadings, examples and keywords for better comprehension and SEO optimization. Answer in Russian. Add formattings and emojies to make it attractive post at Telegram. Do not generate text longer than 512 charachters."
         response_post = self.client.chat.completions.create(
@@ -79,7 +83,7 @@ Your answer should not contain more than three words."""
             temperature=0.7,
         )
         post_content = response_post.choices[0].message.content.strip() + "\n" + recent_news['links']
-        #print(f"post: {post_content}")
+        #logger.info(f"post: {post_content}")
 
         return {
             "title": title,
@@ -89,9 +93,9 @@ Your answer should not contain more than three words."""
 
 
     def get_answer(self, questions):
-        #print(f"conversation: {questions}")
+        #logger.info(f"conversation: {questions}")
         topic = self.get_news_topic(questions)
-        #print(f"news topic: {topic}")
+        #logger.info(f"news topic: {topic}")
         post = self.generate_post(topic)
         
         return f"{post['title']}\n\n{post['meta_description']}\n\n{post['post_content']}"
@@ -99,4 +103,4 @@ Your answer should not contain more than three words."""
 if __name__ == "__main__":
     generator = NewsPostGenerator()
     answer = generator.get_answer(['Да, хуже только Трамп, наверно.', 'Надо войну заканчивать. Война-это плозо', 'А ты читал Зайончковского?'])
-    #print(answer)
+    #logger.info(answer)

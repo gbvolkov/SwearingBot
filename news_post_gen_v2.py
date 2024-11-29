@@ -7,6 +7,10 @@ from converstion_complete import Colocutor
 
 NEWS_API_KEY = Config.NEWSAPI_API_KEY
 
+import logging  
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 # Retrieve news
 def get_news(topic, api_key, page_size=3):
     url = f"https://newsapi.org/v2/everything?q={topic}&apiKey={api_key}&language=en&sortBy=publishedAt&pageSize={page_size}"
@@ -88,4 +92,4 @@ class NewsPostGenerator_v2():
 if __name__ == "__main__":
     generator = NewsPostGenerator_v2()
     answer = generator.get_answer(['Сральник отхожий!', 'Каторжница заскорузлая!', 'Братомучительница!', 'я все!', 'Ура! И как?', 'очень хорошо прошло! я рассчитываю либо на 2.0 либо 2.3', 'Уррряяаааааа!!!;)', 'Марадец!!!', 'там было два задания, которые я не сделала, но все остальное все сделала:)', 'Уря!:))))', 'И что теперь? Каникулы? Или ещё нет?', 'ну я работаю теперь', 'Это конец? Остальные теперь будут в сентябре?', 'Молодец!! Умница!', 'В смысле Бикини? Ты ж теперь в Митте?', 'это в системе не так написано'])
-    print(answer)
+    logging.info(answer)

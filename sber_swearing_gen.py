@@ -4,7 +4,9 @@ import time
 import uuid
 from config import Config
 
-
+import logging  
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 headers_sber = {
   'Content-Type': 'application/x-www-form-urlencoded',
@@ -74,7 +76,7 @@ class SberSwearingGenerator():
 			return ""
 		if response.status_code != 200:
 			time.sleep(10)
-			print(f"ERROR:{response.status_code} {response.reason}\n")
+			logger.info(f"ERROR:{response.status_code} {response.reason}\n")
 			return ""
 		return json.loads(response.text)['choices'][0]['message']['content']
 
