@@ -38,7 +38,8 @@ news_post_creator = NewsPostGenerator_v2()
 
 STACK_SIZE = 16
 
-SWEAR_PROMPT = Config.SWEAR_PROMPT # "Обзови Алису. Пол: Женский. Возраст: 20 лет."
+#SWEAR_PROMPT = Config.SWEAR_PROMPT # "Обзови Алису. Пол: Женский. Возраст: 20 лет."
+
 SWEAR_PERIOD = (90,180)
 REMINDER_PERIOD = (90*60, 180*60)
 #REMINDER_PERIOD = (2, 4)
@@ -136,7 +137,9 @@ class PeriodicMessageSender:
 
 # Message generators
 def swear_generator(sender):
-    return swearing_generator.get_answer(SWEAR_PROMPT)
+    chat_id = sender.chat_id
+    prompt = chat_prompts.get(chat_id, Config.SWEAR_PROMPT)
+    return swearing_generator.get_answer(prompt)
 
 def reminder_generator(sender):
     sentences = ["_Вертится_ __что-то__ на **языке**...", "**Эх**х....", "~Поругаемся~ может?", "Ну *что*?"]
@@ -148,6 +151,7 @@ def voice_generator(sender, sentence):
 
 def silero_voice_generator(sender, sentence):
     voice_id = get_random_voice(silero_voices)
+    logger.info(f"Generating voice with {voice_id}")
     return tts.generate_voice(text = translit2rus(sentence), speaker = voice_id)
 
 def talk_generator(sender):
@@ -167,6 +171,10 @@ def news_post_generator(sender):
 # Dictionary to store PeriodicMessageSender instances
 chat_senders = {}
 chats_conversations = {}
+# Словарь для хранения промптов для каждого чата
+chat_prompts = {}
+# Словарь для хранения активного режима каждого чата
+chat_active_modes = {}
 
 def start_stop(command, senders, chat_id):
     try:
@@ -196,16 +204,47 @@ def start_command(message):
                 'news': PeriodicMessageSender(chat_id, bot, news_post_generator, None, NEWS_PERIOD)
             }
     #start/stop sender jobs
+    chat_active_modes[chat_id] = "swear"
+    if not chat_id in chat_prompts:
+        msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+        bot.register_next_step_handler(msg, process_person_step)
     start_stop('swear', chat_senders[chat_id], chat_id)
 
 @bot.message_handler(commands=['stop', 'swear', 'pause', 'talk', 'news'])
 def command(message):
     command = message.text[1:]
     chat_id = message.chat.id
+    chat_active_modes[chat_id] = command  # Устанавливаем активный режим
+    if command == 'swear':
+        if not chat_id in chat_prompts:
+            msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+            bot.register_next_step_handler(msg, process_person_step)
     if chat_id in chat_senders:
         start_stop(command, chat_senders[chat_id], chat_id)
     else:
         logger.info(f"Messaging is not scheduled for chat {chat_id}. Command: {command}")
+
+def process_person_step(message):
+    chat_id = message.chat.id
+    person = message.text.strip()
+
+    # Сохраняем промпт для данного чатаs
+    chat_prompts[chat_id] = f"Обзови {person}."
+
+    bot.reply_to(message, f"Хорошо, теперь буду оскорблять {person}.")
+
+
+@bot.message_handler(commands=['person'])
+def set_person_command(message):
+    chat_id = message.chat.id
+
+    # Проверяем, активен ли режим 'swear' для данного чата
+    if chat_active_modes.get(chat_id) == 'swear':
+        # Ожидаем, что после команды /person пользователь отправит имя или описание
+        msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+        bot.register_next_step_handler(msg, process_person_step)
+    else:
+        bot.reply_to(message, "Команда /person доступна только в режиме 'swear'. Сначала активируйте его командой /swear.")
 
 def add_conversation(conversations, conversation):
     conversations.append(conversation)
@@ -221,10 +260,10 @@ def handle_message(message):
     chat_id = message.chat.id
     if chat_id in chats_conversations:
         add_conversation(chats_conversations[chat_id], message.text)
-        logger.info(f'New conversation for chat {chat_id}: {chats_conversations[chat_id]}')
+        logger.info('Added message to conversation for chat {chat_id}: {chats_conversations[chat_id]}')
     else:
         chats_conversations[chat_id] = [message.text]
-        logger.info(chats_conversations[chat_id])
+        logger.info(f'New conversation for chat {chat_id}: {chats_conversations[chat_id]}')
 
 def schedule_checker():
     while True:

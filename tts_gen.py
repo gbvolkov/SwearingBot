@@ -3,7 +3,11 @@ import torch
 from num2words import num2words
 import io
 import soundfile as sf
-import config
+from config import Config
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def translit2rus(text):
     translit_map = {
@@ -61,7 +65,7 @@ class TTSGenerator():
 
 		device = torch.device('cpu')
 		torch.set_num_threads(4)
-		local_file = config.SILERO_LOCAL_PATH# + 'v4_ru.pt'
+		local_file = Config.SILERO_LOCAL_PATH
 
 		if not os.path.isfile(local_file):
 			torch.hub.download_url_to_file('https://models.silero.ai/models/tts/ru/v4_ru.pt',
@@ -84,11 +88,15 @@ class TTSGenerator():
 	def generate_voice(self, text, speaker):
 		ssml_text = text if is_speak_xml(text) else None
 		plain_text = None if is_speak_xml(text) else text
+		logger.info(f"Generating voice for {plain_text or ssml_text} with {speaker}")
+
 		audio = self.model.apply_tts(text=plain_text, ssml_text=ssml_text,
                                 speaker=speaker,
                                 sample_rate=self.sample_rate)
+		logger.info(f"Voice generated")
 		buffer = io.BytesIO()
 		sf.write(buffer, audio.numpy(), self.sample_rate, format='WAV')
 		buffer.seek(0)
+		logger.info(f"Voice ready")
 		return buffer
 	
