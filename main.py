@@ -10,7 +10,7 @@ from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
 from news_post_gen import NewsPostGenerator
 from news_post_gen_v2 import NewsPostGenerator_v2
-from voice_gen import generate_audio, get_all_voices
+#from voice_gen import generate_audio, get_all_voices
 from tts_gen import TTSGenerator, translit2rus
 import re
 
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize bot
 bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN)
-voices = get_all_voices()
-logger.info(voices)
+# voices = get_all_voices()
+# logger.info(voices)
 sample_rate = 48000
 tts = TTSGenerator(sample_rate)
 silero_voices = tts.get_all_voices()
@@ -145,9 +145,9 @@ def reminder_generator(sender):
     sentences = ["_Вертится_ __что-то__ на **языке**...", "**Эх**х....", "~Поругаемся~ может?", "Ну *что*?"]
     return sentences[random.randint(0, len(sentences)-1)]
 
-def voice_generator(sender, sentence):
-    voice_id = get_random_voice(voices)
-    return generate_audio(sentence, voice_id['id'])
+#def voice_generator(sender, sentence):
+#    voice_id = get_random_voice(voices)
+#    return generate_audio(sentence, voice_id['id'])
 
 def silero_voice_generator(sender, sentence):
     voice_id = get_random_voice(silero_voices)
