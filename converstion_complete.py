@@ -25,7 +25,7 @@ class Colocutor():
 			{"role": "user", "content": question} for question in questions
 		)
 		response = self.client.chat.completions.create(
-		    model = "gpt-4o-mini",
+		    model = "gpt-4.1-mini",
 		    #model = "gpt-4o",
 		    messages=messages,
 		    temperature = 0.4,

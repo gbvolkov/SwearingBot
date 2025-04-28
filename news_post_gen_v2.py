@@ -29,7 +29,7 @@ def run_chain(template, input, llm):
 
 class NewsPostGenerator_v2():
     def __init__(self):
-        self.llm = ChatOpenAI(api_key=Config.OPENAI_API_KEY, temperature=0.7, model="gpt-4o-mini")
+        self.llm = ChatOpenAI(api_key=Config.OPENAI_API_KEY, temperature=0.7, model="gpt-4.1-nano")
         return
 
     def get_news_topic(self, conversation):
