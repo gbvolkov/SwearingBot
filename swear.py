@@ -195,6 +195,10 @@ def start_stop(command, senders, chat_id):
 def start_command(message):
     chat_id = message.chat.id
 
+    user_name = message.from_user.username
+    chat_name = message.chat.username
+
+    logger.info(f"Bot started for chat {chat_name}. User: {user_name}.")
     #initialize senders if not yest initialized
     if chat_id not in chat_senders:
             chat_senders[chat_id] = {
@@ -260,7 +264,7 @@ def handle_message(message):
     chat_id = message.chat.id
     if chat_id in chats_conversations:
         add_conversation(chats_conversations[chat_id], message.text)
-        logger.info('Added message to conversation for chat {chat_id}: {chats_conversations[chat_id]}')
+        logger.info(f'Added message to conversation for chat {chat_id}: {chats_conversations[chat_id]}')
     else:
         chats_conversations[chat_id] = [message.text]
         logger.info(f'New conversation for chat {chat_id}: {chats_conversations[chat_id]}')
