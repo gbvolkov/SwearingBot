@@ -195,10 +195,10 @@ def start_stop(command, senders, chat_id):
 def start_command(message):
     chat_id = message.chat.id
 
-    user_name = message.from_user.username
-    chat_name = message.chat.username
+    user_name = message.from_user.username if message.from_user.username else 'Unknown'
+    chat_name = message.chat.username if message.chat.username else message.chat.title if message.chat.title else 'Unknown'
 
-    logger.info(f"Bot started for chat {chat_name}. User: {user_name}.")
+    logger.info(f"Bot started for chat {chat_id}:{chat_name}. User: {user_name}.")
     #initialize senders if not yest initialized
     if chat_id not in chat_senders:
             chat_senders[chat_id] = {
