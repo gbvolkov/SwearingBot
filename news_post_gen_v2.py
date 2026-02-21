@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from config import Config
 import requests
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from random import randint
 from converstion_complete import Colocutor
 
