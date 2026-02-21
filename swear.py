@@ -11,7 +11,7 @@ from swearing_gen import SwearingGenerator
 from news_post_gen import NewsPostGenerator
 from news_post_gen_v2 import NewsPostGenerator_v2
 #from voice_gen import generate_audio, get_all_voices
-from tts_gen import TTSGenerator, translit2rus
+from tts_gen import TTSGenerator
 import re
 
 # Set up logging
@@ -105,7 +105,8 @@ class PeriodicMessageSender:
             self.bot.send_message(self.chat_id, escape_markdown_v2(message), parse_mode='MarkdownV2')
             if self.voice_generator and random.randint(0, 9) >= 7:
                 voice = self.voice_generator(self, message)
-                self.bot.send_voice(self.chat_id, voice)
+                if voice is not None:
+                    self.bot.send_voice(self.chat_id, voice)
             logger.info(f"Sent message {message} to chat {self.chat_id}")
         except ApiTelegramException as e:
             logger.error(f"Failed to send message to chat {self.chat_id}: {e}")
@@ -152,7 +153,11 @@ def reminder_generator(sender):
 def silero_voice_generator(sender, sentence):
     voice_id = get_random_voice(silero_voices)
     logger.info(f"Generating voice with {voice_id}")
-    return tts.generate_voice(text = translit2rus(sentence), speaker = voice_id)
+    try:
+        return tts.generate_voice(text=sentence, speaker=voice_id)
+    except Exception as e:
+        logger.error(f"Voice generation failed for chat {sender.chat_id}: {e}")
+        return None
 
 def talk_generator(sender):
     chat_id = sender.chat_id
