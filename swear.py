@@ -5,6 +5,8 @@ import time
 import random
 import threading
 import logging
+import json
+from pathlib import Path
 from config import Config
 from converstion_complete import Colocutor
 from swearing_gen import SwearingGenerator
@@ -46,6 +48,11 @@ REMINDER_PERIOD = (90*60, 180*60)
 TALK_PERIOD = (15*60,240*60)
 NEWS_PERIOD = (180*60,360*60)
 #NEWS_PERIOD = (2,10)
+BOT_MESSAGE_HISTORY_FILE = Path(__file__).with_name("bot_message_history.json")
+BOT_MESSAGE_RETENTION_SECONDS = 48 * 60 * 60
+CLEANUP_STATUS_TTL_SECONDS = 10
+MAX_TRACKED_MESSAGES_PER_CHAT = 5000
+TELEGRAM_DELETE_MESSAGES_LIMIT = 100
 
 
 def escape_markdown_v2(text):
@@ -87,6 +94,161 @@ def escape_markdown_v2(text):
 
     return ''.join(result)
 
+def _normalize_tracked_messages(raw_messages):
+    now = time.time()
+    normalized = []
+    if not isinstance(raw_messages, list):
+        return normalized
+
+    for item in raw_messages:
+        if isinstance(item, dict):
+            message_id = item.get("message_id")
+            sent_at = item.get("sent_at", now)
+        else:
+            message_id = item
+            sent_at = now
+
+        if not isinstance(message_id, int):
+            continue
+
+        try:
+            sent_at = float(sent_at)
+        except (TypeError, ValueError):
+            sent_at = now
+
+        if now - sent_at <= BOT_MESSAGE_RETENTION_SECONDS:
+            normalized.append({"message_id": message_id, "sent_at": sent_at})
+
+    return normalized[-MAX_TRACKED_MESSAGES_PER_CHAT:]
+
+def _load_bot_message_history():
+    if not BOT_MESSAGE_HISTORY_FILE.exists():
+        return {}
+
+    try:
+        raw_history = json.loads(BOT_MESSAGE_HISTORY_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        logger.warning(f"Unable to load bot message history: {e}")
+        return {}
+
+    if not isinstance(raw_history, dict):
+        return {}
+
+    history = {}
+    for chat_id, messages in raw_history.items():
+        normalized = _normalize_tracked_messages(messages)
+        if normalized:
+            history[str(chat_id)] = normalized
+
+    return history
+
+def _save_bot_message_history():
+    try:
+        BOT_MESSAGE_HISTORY_FILE.write_text(
+            json.dumps(bot_message_history, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except OSError as e:
+        logger.error(f"Unable to save bot message history: {e}")
+
+def _prune_tracked_messages(chat_id):
+    chat_key = str(chat_id)
+    pruned = _normalize_tracked_messages(bot_message_history.get(chat_key, []))
+    if pruned:
+        bot_message_history[chat_key] = pruned
+    else:
+        bot_message_history.pop(chat_key, None)
+
+def track_bot_message(message):
+    if message is None:
+        return message
+
+    chat = getattr(message, "chat", None)
+    chat_id = getattr(chat, "id", None)
+    message_id = getattr(message, "message_id", None)
+    if chat_id is None or message_id is None:
+        return message
+
+    with bot_message_history_lock:
+        chat_key = str(chat_id)
+        bot_message_history.setdefault(chat_key, []).append(
+            {"message_id": message_id, "sent_at": time.time()}
+        )
+        _prune_tracked_messages(chat_id)
+        _save_bot_message_history()
+
+    return message
+
+def forget_bot_message(chat_id, message_id):
+    forget_bot_messages(chat_id, [message_id])
+
+def forget_bot_messages(chat_id, message_ids):
+    message_ids = set(message_ids)
+    with bot_message_history_lock:
+        chat_key = str(chat_id)
+        messages = bot_message_history.get(chat_key, [])
+        messages = [item for item in messages if item["message_id"] not in message_ids]
+        if messages:
+            bot_message_history[chat_key] = messages
+        else:
+            bot_message_history.pop(chat_key, None)
+        _save_bot_message_history()
+
+def send_tracked_message(chat_id, *args, **kwargs):
+    return track_bot_message(bot.send_message(chat_id, *args, **kwargs))
+
+def reply_tracked_message(message, *args, **kwargs):
+    return track_bot_message(bot.reply_to(message, *args, **kwargs))
+
+def send_tracked_voice(chat_id, *args, **kwargs):
+    return track_bot_message(bot.send_voice(chat_id, *args, **kwargs))
+
+def delete_tracked_message(chat_id, message_id):
+    try:
+        bot.delete_message(chat_id, message_id)
+        forget_bot_message(chat_id, message_id)
+        return True
+    except ApiTelegramException as e:
+        logger.warning(f"Failed to delete bot message {message_id} in chat {chat_id}: {e}")
+        return False
+
+def delete_tracked_message_later(chat_id, message_id, delay_seconds):
+    timer = threading.Timer(delay_seconds, delete_tracked_message, args=(chat_id, message_id))
+    timer.daemon = True
+    timer.start()
+
+def cleanup_tracked_bot_messages(chat_id):
+    with bot_message_history_lock:
+        _prune_tracked_messages(chat_id)
+        messages = list(bot_message_history.get(str(chat_id), []))
+
+    cleared = 0
+    failed = 0
+    message_ids = [item["message_id"] for item in messages]
+
+    for index in range(0, len(message_ids), TELEGRAM_DELETE_MESSAGES_LIMIT):
+        batch = message_ids[index:index + TELEGRAM_DELETE_MESSAGES_LIMIT]
+        try:
+            bot.delete_messages(chat_id, batch)
+            forget_bot_messages(chat_id, batch)
+            cleared += len(batch)
+        except ApiTelegramException as e:
+            logger.warning(f"Bulk delete failed for chat {chat_id}: {e}")
+            for message_id in batch:
+                if delete_tracked_message(chat_id, message_id):
+                    cleared += 1
+                else:
+                    failed += 1
+
+    with bot_message_history_lock:
+        _prune_tracked_messages(chat_id)
+        _save_bot_message_history()
+
+    return cleared, failed
+
+bot_message_history_lock = threading.Lock()
+bot_message_history = _load_bot_message_history()
+
 class PeriodicMessageSender:
     def __init__(self, chat_id, bot, message_generator, voice_generator, sending_interval_range):
         self.chat_id = chat_id
@@ -102,11 +264,11 @@ class PeriodicMessageSender:
             return
         try:
             message = self.message_generator(self)
-            self.bot.send_message(self.chat_id, escape_markdown_v2(message), parse_mode='MarkdownV2')
+            track_bot_message(self.bot.send_message(self.chat_id, escape_markdown_v2(message), parse_mode='MarkdownV2'))
             if self.voice_generator and random.randint(0, 9) >= 7:
                 voice = self.voice_generator(self, message)
                 if voice is not None:
-                    self.bot.send_voice(self.chat_id, voice)
+                    track_bot_message(self.bot.send_voice(self.chat_id, voice))
             logger.info(f"Sent message {message} to chat {self.chat_id}")
         except ApiTelegramException as e:
             logger.error(f"Failed to send message to chat {self.chat_id}: {e}")
@@ -215,7 +377,7 @@ def start_command(message):
     #start/stop sender jobs
     chat_active_modes[chat_id] = "swear"
     if not chat_id in chat_prompts:
-        msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+        msg = reply_tracked_message(message, "Укажите, кого вы хотите поругать.")
         bot.register_next_step_handler(msg, process_person_step)
     start_stop('swear', chat_senders[chat_id], chat_id)
 
@@ -226,7 +388,7 @@ def command(message):
     chat_active_modes[chat_id] = command  # Устанавливаем активный режим
     if command == 'swear':
         if not chat_id in chat_prompts:
-            msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+            msg = reply_tracked_message(message, "Укажите, кого вы хотите поругать.")
             bot.register_next_step_handler(msg, process_person_step)
     if chat_id in chat_senders:
         start_stop(command, chat_senders[chat_id], chat_id)
@@ -240,7 +402,7 @@ def process_person_step(message):
     # Сохраняем промпт для данного чатаs
     chat_prompts[chat_id] = f"Обзови {person}."
 
-    bot.reply_to(message, f"Хорошо, теперь буду оскорблять {person}.")
+    reply_tracked_message(message, f"Хорошо, теперь буду оскорблять {person}.")
 
 
 @bot.message_handler(commands=['person'])
@@ -250,10 +412,20 @@ def set_person_command(message):
     # Проверяем, активен ли режим 'swear' для данного чата
     if chat_active_modes.get(chat_id) == 'swear':
         # Ожидаем, что после команды /person пользователь отправит имя или описание
-        msg = bot.reply_to(message, "Укажите, кого вы хотите поругать.")
+        msg = reply_tracked_message(message, "Укажите, кого вы хотите поругать.")
         bot.register_next_step_handler(msg, process_person_step)
     else:
-        bot.reply_to(message, "Команда /person доступна только в режиме 'swear'. Сначала активируйте его командой /swear.")
+        reply_tracked_message(message, "Команда /person доступна только в режиме 'swear'. Сначала активируйте его командой /swear.")
+
+@bot.message_handler(commands=['cleanup', 'clean'])
+def cleanup_command(message):
+    chat_id = message.chat.id
+    cleared, failed = cleanup_tracked_bot_messages(chat_id)
+    status_text = f"Cleanup complete. Cleared {cleared} tracked bot message(s)."
+    if failed:
+        status_text += f" Failed to delete {failed} tracked message(s)."
+    status_message = send_tracked_message(chat_id, status_text)
+    delete_tracked_message_later(chat_id, status_message.message_id, CLEANUP_STATUS_TTL_SECONDS)
 
 def add_conversation(conversations, conversation):
     conversations.append(conversation)
