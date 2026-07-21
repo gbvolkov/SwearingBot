@@ -19,5 +19,5 @@ dependencies = [
     "schedule>=1.2.2",
     "silero-stress>=1.4",
     "soundfile>=0.13.1",
-    "torch>=2.10.0",
+    "torch>=2.13.0",
 ]
