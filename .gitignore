@@ -1,5 +1,6 @@
 models/
 bot_message_history.json
+uv.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
