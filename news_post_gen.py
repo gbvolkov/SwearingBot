@@ -40,10 +40,12 @@ Your answer should not contain more than three words."""
         response = self.client.chat.completions.create(
 		    model = "gpt-6-luna",
 		    messages=messages,
-            max_tokens=50,
+            reasoning_effort="none",
+			max_completion_tokens = 50,
             n=1,
             stop=None,
-            temperature=0.7)
+            temperature=0.7
+        )
         return response.choices[0].message.content 
     
     def generate_post(self, topic):
@@ -53,10 +55,11 @@ Your answer should not contain more than three words."""
         response_title = self.client.chat.completions.create(
             model="gpt-6-luna",
             messages=[{"role": "user", "content": prompt_title}],
-            max_tokens=50,
+            reasoning_effort="none",
+			max_completion_tokens = 50,
             n=1,
             stop=None,
-            temperature=0.7,
+            temperature=0.7
         )
         title = response_title.choices[0].message.content.strip()
         #logger.info(f"post title: {title}")
@@ -65,7 +68,8 @@ Your answer should not contain more than three words."""
         response_meta = self.client.chat.completions.create(
             model="gpt-6-luna",
             messages=[{"role": "user", "content": prompt_meta}],
-            max_tokens=100,
+            reasoning_effort="none",
+			max_completion_tokens = 100,
             n=1,
             stop=None,
             temperature=0.7,
@@ -77,7 +81,8 @@ Your answer should not contain more than three words."""
         response_post = self.client.chat.completions.create(
             model="gpt-6.1-terra",
             messages=[{"role": "user", "content": prompt_post}],
-            max_tokens=512,
+            reasoning_effort="none",
+			max_completion_tokens = 512,
             n=1,
             stop=None,
             temperature=0.7,

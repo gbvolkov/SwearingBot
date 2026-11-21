@@ -24,7 +24,8 @@ class SwearingGenerator():
 				{"role": "system", "content": SYSTEM_PROMPT},
 				{"role": "user", "content": question}
 			],
-			temperature = 1.0,
-			max_tokens = 100
+            reasoning_effort="none",
+            temperature=1.0,
+			max_completion_tokens = 100
 		)
 		return response.choices[0].message.content 

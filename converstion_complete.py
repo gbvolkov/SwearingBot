@@ -28,7 +28,8 @@ class Colocutor():
 		    model = "gpt-6-luna",
 		    #model = "gpt-4o",
 		    messages=messages,
+            reasoning_effort="none",
 		    temperature = 0.4,
-		    max_tokens = 200
+			max_completion_tokens = 200
 		)
 		return response.choices[0].message.content 
