@@ -38,7 +38,7 @@ Your answer should not contain more than three words."""
 			{"role": "user", "content": question} for question in questions
 		)
         response = self.client.chat.completions.create(
-		    model = "gpt-4.1-nano",
+		    model = "gpt-6-luna",
 		    messages=messages,
             max_tokens=50,
             n=1,
@@ -51,7 +51,7 @@ Your answer should not contain more than three words."""
 
         prompt_title = f"Come up with an eye-catching headline for a post on the topic: {topic}. Answer in Russian. Add formattings and emojies to make it attractive post title at Telegram."
         response_title = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-6-luna",
             messages=[{"role": "user", "content": prompt_title}],
             max_tokens=50,
             n=1,
@@ -63,7 +63,7 @@ Your answer should not contain more than three words."""
 
         prompt_meta = f"Write a brief but informative meta description for the post with the title: {title}. Do not include title in the meta description. Answer in Russian. Add formattings and emojies to make it attractive post description at Telegram. This should be displayed in the fine print."
         response_meta = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-6-luna",
             messages=[{"role": "user", "content": prompt_meta}],
             max_tokens=100,
             n=1,
@@ -75,7 +75,7 @@ Your answer should not contain more than three words."""
 
         prompt_post = f"Write a detailed and engaging blog post on {topic}, keeping in mind the following recent news:\n{recent_news}\n\n\n\n Use short paragraphs, subheadings, examples and keywords for better comprehension and SEO optimization. Answer in Russian. Add formattings and emojies to make it attractive post at Telegram. Do not generate text longer than 512 charachters."
         response_post = self.client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-6.1-terra",
             messages=[{"role": "user", "content": prompt_post}],
             max_tokens=512,
             n=1,
